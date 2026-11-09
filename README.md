@@ -16,7 +16,7 @@
 
 - **Your phone is the second controller.** A second player scans a QR code and joins on their phone. A refresh or a dropped connection rejoins the same seat within 20 seconds.
 - **The phone sees the game as live HD video.** The kiosk streams its screen to the phone over WebRTC, switching between 240p and 1080p as the connection changes, in the same way video sites adapt quality. [How it works](docs/adaptive-streaming.md).
-- **A cheat-proof economy.** Coins, unlocks, ammo and upgrades live on the server in Postgres, keyed to a device id. Every purchase and run reward is validated and capped there, so editing the browser grants nothing.
+- **Server-checked progress.** Banked coins, unlocks and permanent upgrades live on the server in Postgres, keyed to a device id. Run rewards are validated and capped there, so editing the browser can't grant permanent progress. Purchases during a run are instant, using that run's coins.
 - **No build step.** The client is plain JavaScript and HTML Canvas, served by Express.
 
 ## Quick start
@@ -56,8 +56,8 @@ You defend the wall overnight. Raiders, and from wave 3 beast-creatures, come fr
 | Mouse | Aim |
 | Left-click or Space | Fire |
 | Q | **Signal Volley** shockwave, when charged |
-| 1–6 | Switch weapon |
-| Z, X, C, V | Field Kit: Supply Line repair, Backup Team, War Beast, Dragon Strike |
+| 1–6 | Equip a weapon, or buy it or a clip with this run's coins |
+| Z, X, C, V | Field Kit: Supply Line repair, Backup Team, War Beast, Dragon Strike. The first press buys one; later presses use it |
 
 - **Mango supply cart:** grab the cart that crosses the field for a free wall repair. That's the event's mango theme, built into the gameplay.
 - **Three battlefields:** Dust Frontier, Burnt Orchard and Frostwatch Ridge, each with its own hazard.
@@ -70,7 +70,7 @@ You defend the wall overnight. Raiders, and from wave 3 beast-creatures, come fr
 
 ## Two players: Shared Watch
 
-<img src="docs/screenshots/phone-controller.jpg" width="260" align="right" alt="The phone controller page, asking for a room code and a guard name">
+<img src="docs/screenshots/phone-controller.jpg" width="260" align="right" alt="The phone controller page at phone width, asking for a room code and a guard name">
 
 Pick **Shared Watch** to create a room. The screen shows a QR code and room code; the second player opens it on their phone to play **together** or **against** each other. Both wardens stand on the wall with their own aim and firing.
 
