@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Install and check the code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Check every script parses
+        run: |
+          for f in server.js server/*.js database/*.js public/src/*.js tools/*.mjs; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Load the server modules that need no database
+        run: |
+          node --input-type=module -e "
+            const economy = await import('./server/economy.js');
+            await import('./server/validation.js');
+            if (economy.WEAPON_UPGRADE.max !== 5) throw new Error('unexpected weapon upgrade cap');
+            console.log('server modules load');
+          "

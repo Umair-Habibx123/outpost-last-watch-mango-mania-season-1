@@ -7,6 +7,5 @@ npm-debug.log*
 .idea/
 extras/
 assets-old/
-docs/
-/docs/
 .claude/
+package-lock.json

@@ -1,103 +1,126 @@
 # Outpost: Last Watch
 
-A web-based **wave-survival defense game** built for **GalvanAI · Mango Mania · Innovista (Aug 13)**.
+**A browser wave-survival game where you hold a lone watchtower against raiders from every direction, solo or with a friend using their phone as the controller.**
 
-You hold a lone border watchtower overnight while raiders — and later beast-creatures — converge from every direction. Aim and fire to stop them before they breach the wall. **Wall Integrity carries between waves and never fully heals**, so damage compounds; waves escalate in count, speed, direction and difficulty, with a harder **Raid** surge every 5th wave. Survive as long as you can; your score feeds a shared **leaderboard (The Watch Roll)** that resets each event day.
+[![Play now](https://img.shields.io/badge/play-live%20demo-d4a24c)](https://outpost-last-watch.vercel.app)
+[![CI](https://github.com/Umair-Habibx123/outpost-last-watch-mango-mania-season-1/actions/workflows/ci.yml/badge.svg)](https://github.com/Umair-Habibx123/outpost-last-watch-mango-mania-season-1/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Mango element:** a **mango supply cart** crosses the field and is the only in-run repair — mango = lifeline, not set-dressing.
+**Status:** built for **GalvanAI · Mango Mania · Innovista**, an event held on 13 August 2026, where visitors played it on a kiosk. `master` is the maintained version. The exact build played on the day is kept unchanged on the [`EventDayVersion`](https://github.com/Umair-Habibx123/outpost-last-watch-mango-mania-season-1/tree/EventDayVersion) branch.
 
----
+**[▶ Play it in your browser](https://outpost-last-watch.vercel.app)**
 
-## Tech stack
+![Title screen with the Outpost: Last Watch logo, solo and two-player modes, and three battlefields to choose from](docs/screenshots/title-screen.jpg)
 
-Full-stack, no build step for the client:
+## What's interesting about it
 
-- **Client** — vanilla JS + HTML Canvas in `public/` (`public/src/*.js`), plus illustrated art in `public/assets/`.
-- **Server** — Node **Express** (`server.js`, `server/*.js`) serving `public/` + a REST API, with **Socket.IO** for realtime 2-player rooms.
-- **Database** — **Neon Postgres** (`@neondatabase/serverless`). Schema in `database/schema.sql`, applied by `database/setup.js`.
+- **Your phone is the second controller.** A second player scans a QR code and joins on their phone. A refresh or a dropped connection rejoins the same seat within 20 seconds.
+- **The phone sees the game as live HD video.** The kiosk streams its screen to the phone over WebRTC, switching between 240p and 1080p as the connection changes, in the same way video sites adapt quality. [How it works](docs/adaptive-streaming.md).
+- **A cheat-proof economy.** Coins, unlocks, ammo and upgrades live on the server in Postgres, keyed to a device id. Every purchase and run reward is validated and capped there, so editing the browser grants nothing.
+- **No build step.** The client is plain JavaScript and HTML Canvas, served by Express.
 
-## Run it
+## Quick start
+
+You need **Node.js 20+** and a free [Neon](https://neon.tech) Postgres database.
 
 ```bash
 npm install
-# create .env with your Neon connection string:
-#   DATABASE_URL=postgres://...
-#   (optional) PORT=3000, ADMIN_SECRET=..., WS_GRACE_MS=20000
-npm run db:setup     # create/upgrade tables (idempotent)
-npm start            # or: npm run dev  (node --watch)
 ```
 
-Then open **http://localhost:3000**.
+Create a `.env` file:
 
-> ⚠️ Always run through the server URL. Opening `public/index.html` directly (`file://`) has no backend, so leaderboard / profile / economy / multiplayer won't work.
+```bash
+DATABASE_URL=postgres://...      # your Neon connection string
+# optional:
+PORT=3000
+ADMIN_SECRET=choose-a-secret      # enables the host tools below
+WS_GRACE_MS=20000                 # how long a dropped player keeps their seat
+PUBLIC_URL=http://localhost:3000  # where the join QR code points
+```
 
-## Core gameplay
+Then create the tables and start the server:
 
-- **Aim & fire** — mouse aims; **left-click or Space** fires. Strike raiders before they reach the wall.
-- **Combo streak** (×5) for rapid clean kills; **Signal Volley** (Q) shockwave when charged.
-- **Escalating waves** from all directions; **Raid** surge every 5th wave; beast-creature raiders mix in from wave 3.
-- **Three battlefields** (Dust Frontier / Burnt Orchard / Frostwatch Ridge) with distinct colour-grade + a signature hazard each.
+```bash
+npm run db:setup    # safe to run again; it only adds what's missing
+npm start           # or: npm run dev, which restarts on changes
+```
 
-## Economy & progression (server-authoritative)
+Open **http://localhost:3000**. To join from a phone on the same Wi-Fi, set `PUBLIC_URL` to your computer's network address, such as `http://192.168.1.20:3000`, so the join QR code points somewhere the phone can reach. Always use the server address; opening `public/index.html` directly has no backend, so the leaderboard, economy and multiplayer won't work.
 
-All coins/unlocks/ammo/upgrades live in **Neon**, keyed by a per-device id. The browser stores **only** that id — editing anything client-side grants nothing. Purchases and run rewards are validated + capped in `server/economy.js`.
+## How to play
 
-- **Coins** earned per kill / perfect wave / mango cart; leftover banks to a persistent **stash**.
-- **Player level** (XP across runs) raises ammo caps, item limits, and item power.
-- **Weapons** — start with the infinite **Sidearm**; buy others as one-time unlocks, then buy **limited ammo** per gun (consumed per run), and **upgrade each weapon's level (×5)** for more impact:
-  - Repeater (rapid), Scattergun (spread), Siege Cannon (splash), **Mortar (wipes its whole blast radius)**, Tesla Coil (chain).
-  - Each weapon has a distinct **muzzle + impact** (pistol tick → mortar BOOM).
-- **Field Kit** consumables (used in-run, keys Z X C V): Supply Line (repair), Backup Team, War Beast, Dragon Strike — each an **on-screen ally with its own health meter** that fights raiders near the wall.
-- **Permanent upgrades** (Armory): Warden Armour, Rapid Reload, Field Kit, Wall Mender, Coin Runners, War Chest.
+You defend the wall overnight. Raiders, and from wave 3 beast-creatures, come from every direction, and **wall damage carries over between waves**, so mistakes add up. Every 5th wave is a harder **Raid**.
 
-## Controls & accessibility (Settings)
+| Control | Action |
+|---|---|
+| Mouse | Aim |
+| Left-click or Space | Fire |
+| Q | **Signal Volley** shockwave, when charged |
+| 1–6 | Switch weapon |
+| Z, X, C, V | Field Kit: Supply Line repair, Backup Team, War Beast, Dragon Strike |
 
-Device mouse/keyboard is always active as the fallback. Selectable **control modes**: Device, **AI aim-assist**, **Hand gesture** (webcam), **Face + blink** (webcam), **Voice** (mic). Also: sound, reticle style, screen-shake, and **Player-2 backup** (if the phone controller drops mid-match, the host can drive P2 via AI auto-defend / keyboard — note that **auto-defend never engages in co-op**, where an abandoned post stays empty).
+- **Mango supply cart:** grab the cart that crosses the field for a free wall repair. That's the event's mango theme, built into the gameplay.
+- **Three battlefields:** Dust Frontier, Burnt Orchard and Frostwatch Ridge, each with its own hazard.
+- **Weapons:** start with an unlimited Sidearm, then unlock the Repeater, Scattergun, Siege Cannon, Mortar and Tesla Coil. Each takes ammo and upgrades up to level 5.
+- **The Watch Roll:** a leaderboard of the day's top 10 runs, signed as `Company - Player`.
 
-## Multiplayer (Shared Watch)
+| Dust Frontier | Burnt Orchard | Frostwatch Ridge |
+|---|---|---|
+| ![Dust Frontier battlefield](public/assets/art/maps/map-frontier-960.webp) | ![Burnt Orchard battlefield](public/assets/art/maps/map-orchard-960.webp) | ![Frostwatch Ridge battlefield](public/assets/art/maps/map-frost-960.webp) |
 
-Create a room → a **QR code / room code** lets a second player join **on their phone as a controller** (Play Together or Play Against). Realtime via Socket.IO with a **persistent client id + 20s reconnect grace**, so a refresh rejoins the same seat instead of dropping.
+## Two players: Shared Watch
 
-Both wardens stand on the wall as **separate figures** with independent facing, aim and firing animation. There is **no pause** — a watch runs until it is won or lost.
+<img src="docs/screenshots/phone-controller.jpg" width="260" align="right" alt="The phone controller page, asking for a room code and a guard name">
 
-**Co-op loss rules.** Player 1 *is* the outpost: if they leave, the run is over for both. If Player 2 drops, Player 1 fights on and their post simply stands **empty** — no AI takes it over — until they reconnect. Both players get a toast and a spoken line either way.
+Pick **Shared Watch** to create a room. The screen shows a QR code and room code; the second player opens it on their phone to play **together** or **against** each other. Both wardens stand on the wall with their own aim and firing.
 
-### HD adaptive screen mirror
+- **Player 1 is the outpost.** If they leave, the run ends for both.
+- **If Player 2 drops,** Player 1 fights on and the second post stays empty until they reconnect. Nothing takes it over in co-op.
+- **There's no pause.** A watch runs until it's won or lost.
 
-The phone sees the kiosk's screen as a real **Full-HD WebRTC video stream**, not a slideshow of stills. It runs **adaptive-bitrate (ABR) logic** — the same closed control loop YouTube uses over DASH — switching between 240p and 1080p60 renditions based on the playout buffer, packet loss and measured uplink headroom.
+<br clear="right">
 
-📄 **[docs/adaptive-streaming.md](docs/adaptive-streaming.md)** — how it works, how the DASH model maps onto WebRTC (and the one place it *doesn't*), the gotchas, and how to reuse `public/src/stream.js` in another project.
+## Host tools
 
-## Leaderboard
+These need `ADMIN_SECRET` set:
 
-`The Watch Roll` — the in-game board shows the **top 10** of the current event day from Neon (`/api/leaderboard`). Every finished run is recorded with a timestamp, so the database keeps the full history even though only ten show in-game.
-
-Players sign the roll as **`[Company name] - [Player name]`** (both optional). A score is saved automatically on any exit from the game-over screen.
-
-**Host tools** (need `ADMIN_SECRET` in the env):
-
-- **Export every game as CSV:** open `GET /api/admin/leaderboard.csv?secret=YOUR_SECRET` in a browser (or send the secret via the `x-admin-secret` header). Add `&day=YYYY-MM-DD` to limit to one event day; omit for the complete history. Columns: `created_at, event_day, company, player_name, display_name, mode, map_id, score, waves_cleared, kills, duration_seconds, device_id, id`.
+- **Export every game as CSV:** `GET /api/admin/leaderboard.csv`, with the secret in the `x-admin-secret` header or as `?secret=`. Add `&day=YYYY-MM-DD` for one day.
 - **Reset today's board:** `DELETE /api/admin/leaderboard` with the `x-admin-secret` header.
 
-## Project layout
+## How it's built
+
+| Part | What it uses |
+|---|---|
+| Client | Vanilla JavaScript and HTML Canvas in `public/src/`, with illustrated art in `public/assets/` |
+| Server | Node.js, Express and Socket.IO in `server.js` and `server/`, with Helmet, rate limiting and Zod validation |
+| Database | Neon Postgres. The schema is in `database/schema.sql`, applied by `database/setup.js` |
+| Streaming | WebRTC with an adaptive-bitrate control loop in `public/src/stream.js` |
+| Hosting | The live demo runs on Vercel, using `vercel.json` |
 
 ```
-server.js                 Express + Socket.IO entry
-server/                   database.js · rooms.js · socket.js · validation.js · economy.js
-database/                 schema.sql · setup.js
-public/index.html         markup: canvas, HUD, all screens
-public/styles*.css        base · responsive · ui-assets (asset-driven skin)
-public/src/               config, utils, assets, audio, device, leaderboard, multiplayer,
-                          stream, entities, waves, render, game, arsenal, maps, settings,
-                          backup-controls, controls-ai, controller, main
-public/assets/            art/characters · art/maps · art/ui · art/icons · branding
-docs/                     adaptive-streaming.md (WebRTC ABR mirror)
+server.js            Express and Socket.IO entry point
+server/              database, rooms, socket events, validation, economy
+database/            schema and setup script
+public/index.html    the canvas, HUD and every screen
+public/src/          game loop, waves, rendering, weapons, maps, multiplayer, streaming
+public/assets/       characters, maps, UI art, icons, audio, branding
+tools/               art helpers: sprite atlas builder and map fitter
+docs/                write-ups on streaming and the art pipeline
 ```
 
-## Deploy
+Further reading:
+- [Adaptive bitrate streaming over WebRTC](docs/adaptive-streaming.md)
+- [Character atlas pipeline](docs/character-atlas-pipeline.md)
+- [Map art pipeline](docs/map-art-pipeline.md)
 
-Any Node host that supports WebSockets (Render, Railway, Fly, a VPS, etc.) with `DATABASE_URL` set. Run `npm run db:setup` once, then `npm start`. Set `PUBLIC_URL`/`ALLOWED_ORIGIN` to the deployed origin so the multiplayer join-QR points at it.
+## Limits
 
-## Poster (event day)
+- **Controls:** mouse and keyboard, plus the phone controller. Experimental hand-tracking code is in the repo but turned off, and the AI aim-assist is only a demo aid, so players can't switch it on.
+- **A database is required:** without a Neon database the menus load, but the leaderboard, economy and multiplayer don't.
 
-Key art + logos live in `public/assets/branding/` and `public/assets/`. Still to add: participant photo + a QR to your LinkedIn.
+## License
+
+The code and game art are released under the [MIT License](LICENSE) © 2026 Umair Habib.
+The GalvanAI and Innovista names and logos in `public/assets/branding/` belong to their owners and are not covered by this license.
+
+Built by [Umair Habib](https://github.com/Umair-Habibx123) for the GalvanAI Mango Mania event.
